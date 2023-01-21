@@ -11,9 +11,12 @@ min2 = 0
 
 
 def waitforme(stdscr):
+    hellpup(stdscr, ["c : CONTINUE POMODORO", "q : QUIT"])
     while True:
         if stdscr.getch() == ord('c'):
-            break
+            return 1
+        if stdscr.getch() == ord('q'):
+            return 0
 
 
 def startit(stdscr):
@@ -44,9 +47,18 @@ def startit(stdscr):
         prevpi0 = pi[0]
         x = stdscr.getch()
         if x == ord('p'):
-            waitforme(stdscr)
+            if waitforme(stdscr) == 0:
+                break
         elif x == ord('q'):
             break
+        elif x == ord('r'):
+            stdscr.nodelay(False)
+            stdscr.addstr(6, 7, "Reset podomoro session?(y/n)",
+                          curses.color_pair(1))
+            x = stdscr.getch()
+            if x == ord('y'):
+                j = 1500
+            stdscr.nodelay(True)
         j = j - 1
         time.sleep(1)
 
@@ -77,29 +89,16 @@ def clearprev(stdscr, unit, num):
     stdscr.refresh()
 
 
-def hellpup(stdscr):
-    stdscr.clear()
+def hellpup(stdscr, str):
     stdscr.addstr(0, 0, "="*(curses.COLS))
     stdscr.addstr(1, 0,
                   beaut(["hellpup from podomoro",
                          "inital write v2"], curses.COLS)
                   )
     stdscr.addstr(2, 0,
-                  beaut(["s : START POMODORO",
-                         "q : QUIT"], curses.COLS)
+                  beaut(str, curses.COLS)
                   )
     stdscr.addstr(3, 0, "="*(curses.COLS))
-    stdscr.addstr(5, 0, "00:00")
-    stdscr.addstr(6, 0, "0??:??")
-    stdscr.addstr(7, 0, "1??:??")
-    stdscr.addstr(8, 0, "2??:??")
-    stdscr.addstr(9, 0, "3??:??")
-    stdscr.addstr(10, 0, "4??:??")
-    stdscr.addstr(11, 0, "5??:??")
-    stdscr.addstr(12, 0, "6??:??")
-    stdscr.addstr(13, 0, "7??:??")
-    stdscr.addstr(14, 0, "8??:??")
-    stdscr.addstr(15, 0, "9??:??")
     stdscr.refresh()
 
 
@@ -122,9 +121,23 @@ def main(stdscr):
     stdscr.clear()
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.curs_set(0)
-    hellpup(stdscr)
+    stdscr.addstr(5, 0, "00:00")
+    stdscr.addstr(6, 0, "0??:??")
+    stdscr.addstr(7, 0, "1??:??")
+    stdscr.addstr(8, 0, "2??:??")
+    stdscr.addstr(9, 0, "3??:??")
+    stdscr.addstr(10, 0, "4??:??")
+    stdscr.addstr(11, 0, "5??:??")
+    stdscr.addstr(12, 0, "6??:??")
+    stdscr.addstr(13, 0, "7??:??")
+    stdscr.addstr(14, 0, "8??:??")
+    stdscr.addstr(15, 0, "9??:??")
+    stdscr.refresh()
+    hellpup(stdscr, ["s : START POMODORO", "q : QUIT"])
     x = stdscr.getch()
     if x == ord('s'):
+        hellpup(stdscr, ["p : PAUSE POMODORO", "r : RESET POMODORO",
+                         "q : QUIT"])
         startit(stdscr)
     stdscr.addstr(curses.LINES - 1, 0, "Aight, until next time",
                   curses.color_pair(1))
