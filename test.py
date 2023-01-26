@@ -1,30 +1,40 @@
 import curses
 import time
+krys = {
+    1: [(0, 0), (0, 1), (1, 1), (2, 0), (2, 1), (2, 2)],
+    2: [(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)],
+    0: [(0, 0), (0, 2), (1, 0), (0, 1), (1, 2), (2, 0), (2, 1), (2, 2)],
+    3: [(0, 0), (0, 1), (0, 2), (1, 1), (1, 2), (2, 2), (2, 0), (2, 1)],
+    4: [(0, 0), (1, 0), (0, 2), (1, 1), (1, 2), (2, 2)],
+    5: [(0, 2), (0, 1), (1, 1), (2, 0), (2, 1)],
+    6: [(0, 0), (1, 0), (2, 0), (1, 1), (1, 2), (2, 1), (2, 2)],
+    7: [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2)],
+    8: [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)],
+    9: [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2), (2, 2)]
+}
 
 
-def main(stdscr, x="hellllllllpip"):
-    curses.curs_set(0)
-    stdscr.addstr(8, 8, "+"+"-"*(curses.COLS - 20))
-    stdscr.addstr(9, 8, "| >")
-    stdscr.addstr(10, 8, "+"+"-"*(curses.COLS - 20))
-    x = x+"/"*curses.COLS
-    j = 20
-    i = 1
-    if x != "":
-        while curses.COLS - j > 11:
-            stdscr.addstr(9, curses.COLS - j, x[0:i])
-            stdscr.refresh()
-            time.sleep(0.01)
-            j = j+1
-            i = i+1
-        for j in ['*', '+', '-', '.', ' ']:
-            fillstatus(stdscr, j)
-            time.sleep(0.2)
-    time.sleep(1)
+def main(stdscr):
+    stdscr.clear()
+    for i in range(10):
+        letter(stdscr, 2)
+        time.sleep(1)
+        stdscr.clear()
 
 
-def fillstatus(stdscr, x=" "):
-    stdscr.addstr(9, 11, x*(curses.COLS - 11))
+def grid(i):
+    return krys[i]
+
+
+def letter(stdscr, i, offsetx=0):
+    for u in grid(i):
+        block(stdscr, u[0] * 3, u[1] * 3 + offsetx)
+
+
+def block(stdscr, y, x):
+    stdscr.addstr(y + 0, x, chr(61) * 3)
+    stdscr.addstr(y + 1, x, chr(61) * 3)
+    stdscr.addstr(y + 2, x, chr(61) * 3)
     stdscr.refresh()
 
 
