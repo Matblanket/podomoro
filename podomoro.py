@@ -1,7 +1,4 @@
-import curses
-import time
-import os
-import subprocess
+import curses, sys, select, queue, threading, time
 
 prevpi3 = 0
 prevpi1 = 0
@@ -27,31 +24,26 @@ krys = {
 }
 
 
-def grid(i):
-    return krys[i]
-
-
-def letter(stdscr, i, offsetx=0, offsety=0):
+def letter(i, offsetx=0, offsety=0):
     i = int(i)
-    temp = grid(i)
+    temp = krys[i]
     for u in temp:
-        block(stdscr, u[0] * 2 + offsety, u[1] * 2 + offsetx, i)
-    stdscr.refresh()
+        block(u[0] * 2 + offsety, u[1] * 2 + offsetx, i)
 
 
-def block(stdscr, y, x, char=61):
+def block(y, x, char=61):
     if char == 10:
         char = 32
     else:
         char = 9608
-    stdscr.addstr(y + 0, x, chr(char) * 3)
-    stdscr.addstr(y + 1, x, chr(char) * 3)
+    joblist.put([y + 0, x, chr(char) * 3])
+    joblist.put([y + 1, x, chr(char) * 3])
 
 
 def waitforme(stdscr):
-    hellpup(stdscr, ["c : CONTINUE POMODORO", "q : QUIT"])
+    hellpup(["c : CONTINUE POMODORO", "q : QUIT"])
     while True:
-        statfill(stdscr, "Podomoro session paused :/")
+        statfill("Podomoro session paused :/")
         t = stdscr.getch()
         if t == ord('c'):
             return 1
@@ -59,15 +51,17 @@ def waitforme(stdscr):
             return 0
 
 
-def startit(stdscr):
-    j = 2500
+def startit():
+    j = 10
     global prevpi3
     global prevpi1
     global prevpi0
-    hellpup(stdscr, ["p : PAUSE POMODORO", "r : RESET POMODORO", "q : QUIT"])
-    statfill(stdscr, "Time to get productive (' ' )_/*")
-    while j > 0:
-        stdscr.nodelay(True)
+    hellpup(["p : PAUSE POMODORO", "r : RESET POMODORO", "q : QUIT"])
+    statlinelock.acquire()
+    #statfill("Time to get productive (' ' )_/*")
+    statlinelock.release()
+    print("here")
+    while not tkillpill.wait(1) and j > 0:
         pi = str(int(j / 60))+':'+str(int(j % 60))
         if len(pi) != 5:
             if pi.find(':') < 2:
@@ -75,86 +69,85 @@ def startit(stdscr):
                     pi = '0'+pi
             while len(pi) != 5:
                 pi = pi[:3]+'0'+pi[3:]
-        stdscr.addstr(5, 1, str(pi))
-        letter(stdscr, 10, 9, 9)
-        letter(stdscr, pi[0], 9, 9)
-        letter(stdscr, 10, 19, 9)
-        letter(stdscr, pi[1], 19, 9)
-        letter(stdscr, 10, 29, 9)
-        letter(stdscr, pi[3], 29, 9)
-        letter(stdscr, 10, 39, 9)
-        letter(stdscr, pi[4], 39, 9)
-        stdscr.refresh()
-        highlight(stdscr, 4+1, int(pi[4]))
+        joblist.put([5, 1, str(pi)])
+
+
+
+        letter(10, 9, 9)
+        letter(pi[0], 9, 9)
+        letter(10, 19, 9)
+        letter(pi[1], 19, 9)
+        letter(10, 29, 9)
+        letter(pi[3], 29, 9)
+        letter(10, 39, 9)
+        letter(pi[4], 39, 9)
+
+
+
+        highlight(4+1, int(pi[4]))
         if prevpi3 != pi[3]:
-            highlight(stdscr, 3+1, int(pi[3]))
+            highlight(3+1, int(pi[3]))
         prevpi3 = pi[3]
         if prevpi1 != pi[1]:
-            highlight(stdscr, 1+1, int(pi[1]))
+            highlight(1+1, int(pi[1]))
         prevpi1 = pi[1]
         if prevpi0 != pi[0]:
-            highlight(stdscr, 0+1, int(pi[0]))
+            highlight(0+1, int(pi[0]))
         prevpi0 = pi[0]
-        x = stdscr.getch()
-        if x == ord('p'):
-            if waitforme(stdscr) == 0:
-                break
-            else:
-                hellpup(stdscr, ["p : PAUSE POMODORO", "r : RESET POMODORO",
-                                 "q : QUIT"])
-                statfill(stdscr, "Continuing podomoro session..")
-        elif x == ord('q'):
-            break
-        elif x == ord('r'):
-            stdscr.nodelay(False)
-            statfill(stdscr, "Reset podomoro session?(y/n)", color=1, stay=1)
-            x = stdscr.getch()
-            if x == ord('y'):
-                j = 2500
-            statfill(stdscr, "")
-            time.sleep(0.1)
-            stdscr.nodelay(True)
+
+
+
+#        x = stdscr.getch()
+#        if x == ord('p'):
+#            if waitforme(stdscr) == 0:
+#                break
+#            else:
+#                hellpup(["p : PAUSE POMODORO", "r : RESET POMODORO",
+#                                 "q : QUIT"])
+#                statfill(stdscr, "Continuing podomoro session..")
+#        elif x == ord('q'):
+#            break
+#        elif x == ord('r'):
+#            stdscr.nodelay(False)
+#            statfill(stdscr, "Reset podomoro session?(y/n)", color=1, stay=1)
+#            x = stdscr.getch()
+#            if x == ord('y'):
+#                j = 2500
+#            statfill(stdscr, "")
+#            time.sleep(0.1)
+#            stdscr.nodelay(True)
         j = j - 1
-        time.sleep(1)
 
 
-def highlight(stdscr, unit, val):
-    stdscr.addstr(6+val, unit, chr(9608), curses.color_pair(1))
-    stdscr.refresh()
+def highlight(unit, val):
+    joblist.put([6+val, unit, chr(9608), curses.color_pair(1)])
     if unit == 5:
         global sec1
-        clearprev(stdscr, unit, sec1)
+        clearprev(unit, sec1)
         sec1 = val
     elif unit == 4:
         global sec2
-        clearprev(stdscr, unit, sec2)
+        clearprev(unit, sec2)
         sec2 = val
     elif unit == 2:
         global min1
-        clearprev(stdscr, unit, min1)
+        clearprev(unit, min1)
         min1 = val
     elif unit == 1:
         global min2
-        clearprev(stdscr, unit, min2)
+        clearprev(unit, min2)
         min2 = val
 
 
-def clearprev(stdscr, unit, num):
-    stdscr.addstr(6+num, unit, "█")
-    stdscr.refresh()
+def clearprev(unit, num):
+    joblist.put([6+num, unit, "█"])
 
 
-def hellpup(stdscr, str):
-    stdscr.addstr(0, 0, "="*(curses.COLS))
-    stdscr.addstr(1, 0,
-                  beaut(["hellpup from podomoro",
-                         "inital write v2"], curses.COLS)
-                  )
-    stdscr.addstr(2, 0,
-                  beaut(str, curses.COLS)
-                  )
-    stdscr.addstr(3, 0, "="*(curses.COLS))
-    stdscr.refresh()
+def hellpup(str):
+    joblist.put([0, 0, "="*(curses.COLS)])
+    joblist.put([1, 0, beaut(["hellpup from podomoro", "inital write v2"], curses.COLS)])
+    joblist.put([2, 0, beaut(str, curses.COLS) ])
+    joblist.put([3, 0, "="*(curses.COLS)])
 
 
 def beaut(strlist, wide):
@@ -172,31 +165,34 @@ def beaut(strlist, wide):
     return fin
 
 
-def main(stdscr):
-    stdscr.clear()
+def inputer():
+    while True:
+        r, w, e = select.select([sys.stdin], [], [], 0)
+        if sys.stdin in r:
+            inputlist.put(sys.stdin.read(1))
+        joblist.put([100,100,inputlist.get()])
+
+
+def main():
     global length
     curses.use_default_colors()
     curses.init_pair(1,curses.COLOR_RED,-1)
     length = curses.COLS - start
     curses.curs_set(0)
-    stdscr.addstr(5, 0,  " 00:00")
-    stdscr.addstr(6, 0,  "0██:██")
-    stdscr.addstr(7, 0,  "1██:██")
-    stdscr.addstr(8, 0,  "2██:██")
-    stdscr.addstr(9, 0,  "3██:██")
-    stdscr.addstr(10, 0, "4██:██")
-    stdscr.addstr(11, 0, "5██:██")
-    stdscr.addstr(12, 0, "6██:██")
-    stdscr.addstr(13, 0, "7██:██")
-    stdscr.addstr(14, 0, "8██:██")
-    stdscr.addstr(15, 0, "9██:██")
-    coords(stdscr, length, start, depth)
-    stdscr.refresh()
-    hellpup(stdscr, ["s : START POMODORO", "q : QUIT"])
-    x = stdscr.getch()
-    while True:
-        startit(stdscr)
-        subprocess.getoutput("cvlc --play-and-exit temp.opus")
+    joblist.put([5, 0,  " 00:00"])
+    joblist.put([6, 0,  "0██:██"])
+    joblist.put([7, 0,  "1██:██"])
+    joblist.put([8, 0,  "2██:██"])
+    joblist.put([9, 0,  "3██:██"])
+    joblist.put([10, 0, "4██:██"])
+    joblist.put([11, 0, "5██:██"])
+    joblist.put([12, 0, "6██:██"])
+    joblist.put([13, 0, "7██:██"])
+    joblist.put([14, 0, "8██:██"])
+    joblist.put([15, 0, "9██:██"])
+    coords(length, start, depth)
+    hellpup(["s : START POMODORO", "q : QUIT"])
+#        subprocess.getoutput("cvlc --play-and-exit temp.opus")
 
 
 start = 10
@@ -204,43 +200,58 @@ depth = 5
 length = 20
 
 
-def statfill(stdscr, x="", color=0, stay=0):
-    coords(stdscr, length, start, depth)
-    stdscr.refresh()
+def statfill(x="", color=0, stay=0):
+    coords(length, start, depth)
     if x != "":
         j = 0
         while j < len(x) and j < length - 6:
-            stdscr.addstr(depth+1, start+4+j, "_", curses.color_pair(color))
-            stdscr.refresh()
+            joblist.put([depth+1, start+4+j, "_", curses.color_pair(color)])
             time.sleep(0.05)
-            stdscr.addstr(depth+1, start+4+j, x[j], curses.color_pair(color))
-            stdscr.refresh()
+            joblist.put([depth+1, start+4+j, x[j], curses.color_pair(color)])
             time.sleep(0.05)
             j = j + 1
         while j < len(x):
-            stdscr.addstr(depth+1, start+4, x[j-length+6:j+1],
-                          curses.color_pair(color))
-            stdscr.refresh()
+            joblist.put([depth+1, start+4, x[j-length+6:j+1], curses.color_pair(color)])
             time.sleep(0.1)
             j = j + 1
         time.sleep(1)
     if stay != 1:
         for k in ['*', '+', '-', '.', ' ']:
-            fillstatus(stdscr, k)
+            fillstatus(k)
             time.sleep(0.1)
     time.sleep(1)
 
 
-def fillstatus(stdscr, x=" "):
-    stdscr.addstr(depth + 1, start+4, x*(length-5))
-    stdscr.refresh()
+def fillstatus(x=" "):
+    joblist.put([depth + 1, start+4, x*(length-5)])
 
 
-def coords(stdscr, length=10, start=10, depth=3):
-    stdscr.addstr(depth, start, "+"+"-"*(length-2)+"+")
-    stdscr.addstr(depth+1, start, "| >")
-    stdscr.addstr(depth+1, start + length - 1, "|")
-    stdscr.addstr(depth+2, start, "+"+"-"*(length-2)+"+")
+def coords(length=10, start=10, depth=3):
+    joblist.put([depth, start, "+"+"-"*(length-2)+"+"])
+    joblist.put([depth+1, start, "| >"])
+    joblist.put([depth+1, start + length - 1, "|"])
+    joblist.put([depth+2, start, "+"+"-"*(length-2)+"+"])
 
 
-curses.wrapper(main)
+def starter():
+    curses.wrapper(damn)
+
+
+def damn(stdscr):
+    stdscr.clear()
+    while not tkillpill.wait(0):
+        a = joblist.get(block=True,timeout=5)
+        stdscr.addstr(a[0],a[1],a[2])
+        stdscr.refresh()
+        time.sleep(0.009)
+
+
+statlinelock = threading.Lock()
+tkillpill = threading.Event()
+tinputproc = threading.Thread(target=inputer)
+tinputproc.start()
+joblist = queue.Queue()
+inputlist = queue.Queue()
+threading.Thread(target=starter).start()
+main()
+startit()

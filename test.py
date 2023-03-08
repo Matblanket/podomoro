@@ -1,4 +1,19 @@
-import subprocess
+import tty
+import sys
+import termios
 
-some = subprocess.getoutput('yt-dlp -f bestaudio -x -o temp https://www.youtube.com/watch?v=niqC3BT9gck')
-print(some)
+def getch():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
+while True:
+    c = getch()
+    print(c)
+    if c =='q':
+        break
