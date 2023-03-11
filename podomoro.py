@@ -50,7 +50,6 @@ def waitforme(stdscr):
         if t == ord('q'):
             return 0
 
-
 def startit():
     j = 10
     global prevpi3
@@ -195,7 +194,7 @@ def main():
 #        subprocess.getoutput("cvlc --play-and-exit temp.opus")
 
 
-start = 10
+start= 10
 depth = 5
 length = 20
 
