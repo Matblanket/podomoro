@@ -7,7 +7,7 @@ joblist = queue.Queue()
 inputlist = queue.Queue()
 tkillpill = threading.Event()
 
-statwin = window(5,10,misc.ttywidth(),3,True,joblist)
+statwin = window(5,10,True,joblist,misc.ttywidth(),3)
 
 pomodoro = clock(joblist,inputlist,tkillpill,statwin)
 
@@ -28,16 +28,20 @@ def starter():
 
 
 def painter(stdscr):
+    curses.curs_set(0)
     stdscr.clear()
     stdscr.refresh()
     while not tkillpill.wait(0):
         try:
             a = joblist.get(block=True,timeout=0.1)
-            stdscr.addstr(a[0],a[1],a[2])
-            stdscr.refresh()
+            paintervar(stdscr,a)
         except queue.Empty:
             pass 
 
+def paintervar(stdscr,a):
+    stdscr.addstr(a["y"],a["x"],a["t"])
+    if a["ref"]:
+        stdscr.refresh()
 
 def inhandler():
     while not tkillpill.wait(0):

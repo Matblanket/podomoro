@@ -1,9 +1,12 @@
+import misc
 class window:
     
-    def __init__(self,y,x,width,height,border,jobl):
+    def __init__(self,y,x,border,jobl,width=10,height=10):
         self.y = y
         self.x = x
-        self.width = width-self.x
+        self.width = width
+        if misc.ttywidth()<self.x+self.width:
+            self.width = misc.ttywidth()-self.x
         self.height = height
         self.jobl = jobl
         if border:
@@ -21,18 +24,18 @@ class window:
 
 
     def topborder(self):
-        self.jobl.put([self.y,self.x,"-"*(self.width)])
+        self.jobl.put(misc.getjob(self.y,self.x,"-"*(self.width)))
 
 
     def botborder(self):
-        self.jobl.put([self.y+self.height-1,self.x,"-"*(self.width)])
+        self.jobl.put(misc.getjob(self.y+self.height-1,self.x,"-"*(self.width)))
 
 
     def lborder(self):
         for i in range(self.height):
-            self.jobl.put([self.y+i,self.x,"|"])
+            self.jobl.put(misc.getjob(self.y+i,self.x,"|"))
 
 
     def rborder(self):
         for i in range(self.height):
-            self.jobl.put([self.y+i,self.x+self.width-1,"|"])
+            self.jobl.put(misc.getjob(self.y+i,self.x+self.width-1,"|"))
