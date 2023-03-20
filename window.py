@@ -16,6 +16,10 @@ class window:
             self.width = width-2
             self.height = height-2
 
+    def winclear(self):
+        for i in range(self.height):
+            self.jobl.put(misc.getjob(self.y+i,self.x," "*(self.width)))
+
     def bordersetup(self):
         self.botborder()
         self.topborder()

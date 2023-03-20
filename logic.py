@@ -1,5 +1,7 @@
 import time, threading, misc
 from window import window
+timeset=16
+timesetq=[timeset/4,timeset/2,3*timeset/4,timeset]
 krys = {
     1: [(0, 0), (0, 1), (1, 1), (2, 0), (2, 1), (2, 2)],
     2: [(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)],
@@ -50,13 +52,12 @@ class clock:
         self.handleclockstate()
 
 
-    def letter(self,i,win):
+    def letter(self,i,win,rand=False):
         temp = krys[int(i)]
         for u in krys[int(10)]:
-            misc.block(u[0] * 2 + win.y, u[1] * 2 + win.x, self.jobl,True)
-
+            misc.block(u[0] * 2 + win.y, u[1] * 2 + win.x, self.jobl,clear=True)
         for u in temp:
-            misc.block(u[0] * 2 + win.y, u[1] * 2 + win.x, self.jobl)
+            misc.block(u[0] * 2 + win.y, u[1] * 2 + win.x, self.jobl,rand)
 
 
     def displayletters(self,time):
@@ -66,10 +67,15 @@ class clock:
         self.letter(time[4],self.second2)
 
     def displaylettersbr(self,time):
-        self.letter(time[0],self.minutebr)
-        self.letter(time[1],self.minute2br)
-        self.letter(time[3],self.secondbr)
-        self.letter(time[4],self.second2br)
+        self.letter(time[0],self.minutebr,True)
+        self.letter(time[1],self.minute2br,True)
+        self.letter(time[3],self.secondbr,True)
+        self.letter(time[4],self.second2br,True)
+
+    def chargingletter(self,win):
+        for u in krys[int(10)]:
+            misc.block(u[0] * 2 + win.y, u[1] * 2 + win.x, self.jobl,True)
+
 
     def handleclockstate(self):
         if self.clockstate == 'p':
@@ -84,6 +90,7 @@ class clock:
                         self.tkillpill.set()
                         break
             
+
     def statline(self, x = ""):
         x = " > " + x
         j = 0
@@ -95,25 +102,70 @@ class clock:
             j=j+1
 
 
+    def updatecharge(self,time):
+        try:
+            if time==0:
+                self.chargingletter(self.second2br)
+                self.chargingletter(self.secondbr)
+                self.chargingletter(self.minute2br)
+                self.chargingletter(self.minutebr)
+            else:
+                t=timesetq.index(time)
+                if t==3:
+                    self.chargingletter(self.minutebr)
+                elif t==2:
+                    self.chargingletter(self.minute2br)
+                    self.chargingletter(self.minutebr)
+                elif t==1:
+                    self.chargingletter(self.secondbr)
+                    self.chargingletter(self.minute2br)
+                    self.chargingletter(self.minutebr)
+                elif t==0:
+                    self.chargingletter(self.second2br)
+                    self.chargingletter(self.secondbr)
+                    self.chargingletter(self.minute2br)
+                    self.chargingletter(self.minutebr)
+        except ValueError:
+            pass
+
 
     def worktime(self):
-        timeset=10
-        while timeset >= 0 and not self.tkillpill.wait(1):
+        timeset=16
+        while timeset > 0 and not self.tkillpill.wait(1):
             pi = '{:02d}:{:02d}'.format(int(timeset / 60), int(timeset % 60))
             self.jobl.put(misc.getjob(5, 1, str(pi)))
             self.displayletters(pi)
+            self.updatecharge(timeset)
             with self.pause:
                 timeset = timeset - 1
+        self.displaytimebr.winclear()
+        time.sleep(0.2)
+        self.updatecharge(timeset)
+        time.sleep(0.3)
+        self.displaytimebr.winclear()
+        time.sleep(0.2)
+        self.updatecharge(timeset)
+        time.sleep(0.3)
+        self.displaytimebr.winclear()
         if not self.tkillpill.wait(0):
             self.breaktime()
 
 
     def breaktime(self):
         timeset=5
-        while timeset >= 0 and not self.tkillpill.wait(1):
+        while timeset > 0 and not self.tkillpill.wait(1):
             pi = '{:02d}:{:02d}'.format(int(timeset / 60), int(timeset % 60))
             self.jobl.put(misc.getjob(5, 1, str(pi)))
             timeset = timeset - 1
             self.displaylettersbr(pi)
+        self.displaytimebr.winclear()
+        time.sleep(0.2)
+        self.updatecharge(timeset)
+        time.sleep(0.3)
+        self.displaytimebr.winclear()
+        time.sleep(0.2)
+        self.updatecharge(timeset)
+        time.sleep(0.3)
+        self.displaytimebr.winclear()
         if not self.tkillpill.wait(0):
             self.worktime()

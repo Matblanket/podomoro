@@ -1,4 +1,4 @@
-import curses, time, sys, select, queue, threading
+import random, curses, time, sys, select, queue, threading
 from logic import clock 
 from window import window
 import misc 
@@ -29,6 +29,14 @@ def starter():
 
 def painter(stdscr):
     curses.curs_set(0)
+    curses.init_pair(1,curses.COLOR_RED,curses.COLOR_BLACK)
+    curses.init_pair(2,curses.COLOR_BLUE,curses.COLOR_BLACK)
+    curses.init_pair(3,curses.COLOR_GREEN,curses.COLOR_BLACK)
+    curses.init_pair(4,curses.COLOR_YELLOW,curses.COLOR_BLACK)
+    curses.init_pair(5,curses.COLOR_WHITE,curses.COLOR_BLACK)
+    curses.init_pair(6,curses.COLOR_MAGENTA,curses.COLOR_BLACK)
+    curses.init_pair(7,curses.COLOR_CYAN,curses.COLOR_BLACK)
+    curses.init_pair(8,curses.COLOR_BLACK,curses.COLOR_BLACK)
     stdscr.clear()
     stdscr.refresh()
     while not tkillpill.wait(0):
@@ -38,8 +46,16 @@ def painter(stdscr):
         except queue.Empty:
             pass 
 
+
+def getrandcolor():
+    return curses.color_pair(random.randint(1,7))
+
+
 def paintervar(stdscr,a):
-    stdscr.addstr(a["y"],a["x"],a["t"])
+    if a["color"]=="rand":
+        stdscr.addstr(a["y"],a["x"],a["t"],getrandcolor())
+    elif a["color"]=="norm":
+        stdscr.addstr(a["y"],a["x"],a["t"])
     if a["ref"]:
         stdscr.refresh()
 
